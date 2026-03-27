@@ -150,7 +150,7 @@ const AdminOrders = () => {
                                     <span className="px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider mb-2 inline-block bg-current/10">
                                         {order.status}
                                     </span>
-                                    <h3 className="text-xl font-bold text-on-surface">Order #{order._id.slice(-4).toUpperCase()}</h3>
+                                    <h3 className="text-xl font-bold text-on-surface">Order #{order._id.slice(-6).toUpperCase()}</h3>
                                     <p className="text-sm text-on-surface-variant font-medium">
                                         Table {order.tableNumber || '??'} • Guest: {order.userId?.name || 'Guest'}
                                     </p>

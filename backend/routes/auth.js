@@ -25,21 +25,32 @@ const sendToken = (user, statusCode, res) => {
     res.status(statusCode).json({ user });
 };
 
+const { z } = require('zod');
+
+const otpRequestSchema = z.object({
+    role: z.enum(['user', 'admin']).optional().default('user'),
+    name: z.string().min(2, 'Name is required and must be at least 2 characters'),
+    mobile: z.string().min(10, 'Mobile number is required and must be valid'),
+    email: z.string().email('Invalid email').optional().or(z.literal(''))
+});
+
 // Request OTP (returns a temp token for the OTP phase)
 router.post('/request-otp', async (req, res) => {
-    const { role = 'user', name, mobile, email } = req.body || {};
-
-    if (!mobile) return res.status(400).json({ message: 'Mobile number is required' });
-    if (!name) return res.status(400).json({ message: 'Name is required' });
-    if (role === 'admin' && !email) return res.status(400).json({ message: 'Email is required for admin' });
-
     try {
+        const validated = otpRequestSchema.parse(req.body);
+        const { role, name, mobile, email } = validated;
+
+        if (role === 'admin' && !email) return res.status(400).json({ message: 'Email is required for admin' });
+
         // Mock provider: log OTP to console. Structure kept for SMS providers (e.g., Twilio).
         console.log(`[AUTH] OTP for ${mobile} (${role}): ${OTP_VALUE}`);
 
         const tempToken = generateTempToken({ role, name, mobile, email });
         res.status(200).json({ message: 'OTP sent', tempToken });
     } catch (err) {
+        if (err instanceof z.ZodError) {
+            return res.status(400).json({ message: err.errors[0].message });
+        }
         res.status(500).json({ message: 'Server error' });
     }
 });

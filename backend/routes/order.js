@@ -50,6 +50,53 @@ router.get('/', adminAuth, async (req, res) => {
     }
 });
 
+// User: Check for active (non-completed/non-rejected) order
+router.get('/active', auth, async (req, res) => {
+    try {
+        const activeOrder = await Order.findOne({
+            userId: req.user._id,
+            status: { $nin: ['Completed', 'Rejected'] }
+        }).populate('items.dishId').sort({ createdAt: -1 });
+        
+        res.json({ activeOrder: activeOrder || null });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to check active order' });
+    }
+});
+
+// User: Add more items to existing active order
+router.patch('/:id/add-items', auth, async (req, res) => {
+    try {
+        const { items, totalAmount } = req.body;
+        const order = await Order.findOne({ _id: req.params.id, userId: req.user._id });
+        
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+        if (['Completed', 'Rejected'].includes(order.status)) {
+            return res.status(400).json({ message: 'Cannot add items to a completed order' });
+        }
+
+        // Merge items: if dishId already exists, increase quantity; otherwise push new
+        items.forEach(newItem => {
+            const existing = order.items.find(i => i.dishId?.toString() === newItem.dishId);
+            if (existing) {
+                existing.quantity += newItem.quantity;
+            } else {
+                order.items.push(newItem);
+            }
+        });
+        order.totalAmount = (order.totalAmount || 0) + totalAmount;
+        await order.save();
+
+        // Notify admin of updated order
+        const io = req.app.get('io');
+        if (io) io.emit('orderUpdate', order);
+
+        res.json(order);
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to add items' });
+    }
+});
+
 // User: Get history
 router.get('/user', auth, async (req, res) => {
     try {

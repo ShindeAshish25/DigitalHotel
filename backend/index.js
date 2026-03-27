@@ -4,6 +4,9 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const path = require('path');
 const connectDB = require('./config/db');
 
 const app = express();
@@ -39,12 +42,20 @@ const io = socketIo(server, {
 connectDB();
 
 // Middleware
+app.use(helmet({ contentSecurityPolicy: false })); // Disabled CSP for Cloudinary/external images
 app.use(cors({
     origin: allowOrigin,
     credentials: true
 }));
 app.use(express.json());
 app.use(cookieParser());
+
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 200, // 200 requests per IP
+    message: 'Too many requests, please try again later.'
+});
+app.use('/api/', limiter);
 
 // Store io in app to use in routes
 app.set('io', io);
@@ -58,6 +69,14 @@ app.use('/api/profile', require('./routes/profile'));
 
 // Serve Uploads
 app.use('/uploads', express.static('uploads'));
+
+// Production Frontend Serving
+if (process.env.NODE_ENV === 'production') {
+    app.use(express.static(path.join(__dirname, '../frontend/dist')));
+    app.use((req, res) => {
+        res.sendFile(path.resolve(__dirname, '../frontend/dist', 'index.html'));
+    });
+}
 
 // Socket handle
 io.on('connection', (socket) => {

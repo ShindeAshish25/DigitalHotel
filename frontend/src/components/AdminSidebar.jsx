@@ -7,7 +7,8 @@ import {
     BookOpen,
     Settings,
     Bell,
-    ChefHat
+    ChefHat,
+    User
 } from 'lucide-react';
 
 const AdminSidebar = () => {
@@ -16,6 +17,7 @@ const AdminSidebar = () => {
         { name: 'Table Status', icon: <TableProperties size={20} />, path: '/admin/tables' },
         { name: 'Live Orders', icon: <Receipt size={20} />, path: '/admin/orders' },
         { name: 'Menu Management', icon: <BookOpen size={20} />, path: '/admin/menu' },
+        { name: 'Admin Profile', icon: <User size={20} />, path: '/admin/profile' },
         { name: 'Settings', icon: <Settings size={20} />, path: '/admin/settings' },
     ];
 

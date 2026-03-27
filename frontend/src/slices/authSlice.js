@@ -8,6 +8,7 @@ const initialState = {
   user: null,
   isAuthenticated: false,
   loading: false,
+  isInitializing: true,
   error: null,
   tempToken: null,
 };
@@ -68,9 +69,18 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.error.message;
       })
+      .addCase(loadUser.pending, (state) => {
+          state.isInitializing = true;
+      })
       .addCase(loadUser.fulfilled, (state, action) => {
           state.user = action.payload.user;
           state.isAuthenticated = true;
+          state.isInitializing = false;
+      })
+      .addCase(loadUser.rejected, (state) => {
+          state.isInitializing = false;
+          state.isAuthenticated = false;
+          state.user = null;
       })
       .addCase(logoutUser.fulfilled, (state) => {
           state.user = null;
