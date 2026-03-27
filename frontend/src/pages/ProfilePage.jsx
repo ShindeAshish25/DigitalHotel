@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, CheckCircle, XCircle, Camera, Save, User, Smartphone, Mail, ChevronRight, Package, Calendar } from 'lucide-react';
-import { loadUser } from '../slices/authSlice';
+import { Camera, User, Smartphone, Mail, ChevronRight, Package, Calendar, Settings, LogOut } from 'lucide-react';
+import { loadUser, logoutUser } from '../slices/authSlice';
 
 const ProfilePage = () => {
     const { user } = useSelector(state => state.auth);
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
     const [editMode, setEditMode] = useState(false);
     const [formData, setFormData] = useState({ name: user?.name || '', email: user?.email || '' });
@@ -25,6 +27,11 @@ const ProfilePage = () => {
         fetchHistory();
     }, []);
 
+    const handleLogout = () => {
+        dispatch(logoutUser());
+        navigate('/login');
+    };
+
     const handleUpdate = async () => {
         try {
             await axios.put(`${import.meta.env.VITE_API_BASE_URL}/profile/update`, formData);
@@ -38,13 +45,11 @@ const ProfilePage = () => {
     const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
-        const formData = new FormData();
-        formData.append('avatar', file);
-
+        const data = new FormData();
+        data.append('avatar', file);
         setUploading(true);
         try {
-            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/profile/upload`, formData, {
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/profile/upload`, data, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             dispatch(loadUser());
@@ -56,141 +61,170 @@ const ProfilePage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-surface p-6 flex flex-col gap-10">
-            <header className="flex flex-col gap-2 mt-20" style={{ maxWidth: '1200px', margin: '80px auto 0 auto', width: '100%' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.2em' }}>EDITORIAL IDENTITY</span>
-                <h1 className="display-sm">Personal <span style={{ color: 'var(--primary)' }}>Curatory</span></h1>
-            </header>
+        <div className="min-h-screen bg-surface">
+            {/* 1. STICKY HEADER SECTION */}
+            <nav className="fixed top-0 left-0 right-0 z-50 border-b border-on-surface/5 bg-surface/80 backdrop-blur-xl">
+                <div className="max-w-[1200px] mx-auto px-6 md:px-12 h-20 md:h-24 flex items-center justify-between">
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex flex-col"
+                    >
+                        <span className="text-[9px] md:text-[10px] font-black text-primary tracking-[0.3em] uppercase leading-none mb-1">
+                            Editorial Identity
+                        </span>
+                        <h1 className="text-xl md:text-2xl font-serif font-light tracking-tight text-on-surface">
+                            Personal <span className="text-primary italic">Curatory</span>
+                        </h1>
+                    </motion.div>
 
-            <main style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem' }}>
-                
-                {/* Profile Identity Card - Bento Item */}
-                <div className="editorial-shadow" style={{ gridColumn: 'span 5', background: 'var(--surface-container-lowest)', borderRadius: '2.5rem', padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                        <div style={{ position: 'relative' }}>
-                            <div style={{ 
-                                width: '100px', height: '100px', borderRadius: '2rem', background: 'var(--surface-container-low)', 
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' 
-                            }}>
+                    <div className="flex items-center gap-4">
+                        <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 bg-on-surface text-surface rounded-full text-[10px] font-black tracking-widest uppercase transition-all hover:bg-primary"
+                        >
+                            <span className="hidden sm:inline">Sign Out</span>
+                            <LogOut size={14} />
+                        </motion.button>
+                    </div>
+                </div>
+            </nav>
+
+            {/* 2. MAIN CONTENT AREA (Padded for Header) */}
+            <main className="max-w-[1200px] mx-auto px-4 md:px-8 lg:px-12 pt-32 pb-20 grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+                {/* Profile Identity Card */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="editorial-shadow lg:col-span-5 bg-surface-container-lowest rounded-[2.5rem] p-8 md:p-10 flex flex-col gap-8 h-fit border border-on-surface/5"
+                >
+                    <div className="flex flex-col sm:flex-row items-center gap-6">
+                        <div className="relative group">
+                            <div className="w-24 h-24 md:w-28 md:h-28 rounded-[2rem] bg-surface-container-low flex items-center justify-center overflow-hidden border border-surface-container-high shadow-inner">
                                 {user?.avatarUrl ? (
-                                    <img src={`${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}${user.avatarUrl}`} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <img
+                                        src={`${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}${user.avatarUrl}`}
+                                        alt="Profile"
+                                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                    />
                                 ) : (
-                                    <User size={40} color="var(--primary)" />
+                                    <User size={40} className="text-primary opacity-40" />
                                 )}
                             </div>
-                            <label style={{ 
-                                position: 'absolute', bottom: '-8px', right: '-8px', 
-                                background: 'var(--primary)', width: '36px', height: '36px', 
-                                borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                cursor: 'pointer', color: 'white', border: '4px solid var(--surface-container-lowest)'
-                            }}>
-                                <Camera size={16} />
-                                <input type="file" style={{ display: 'none' }} onChange={handleFileChange} />
+                            <label className="absolute -bottom-2 -right-2 bg-primary text-white w-10 h-10 rounded-xl flex items-center justify-center cursor-pointer border-4 border-surface-container-lowest hover:scale-105 transition-transform shadow-lg">
+                                <Camera size={18} />
+                                <input type="file" className="hidden" onChange={handleFileChange} />
                             </label>
-                            {uploading && <div style={{ position: 'absolute', inset: 0, borderRadius: '2rem', background: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>...</div>}
+                            {uploading && (
+                                <div className="absolute inset-0 rounded-[2rem] bg-surface-container-lowest/80 flex items-center justify-center backdrop-blur-sm">
+                                    <div className="w-5 h-5 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+                                </div>
+                            )}
                         </div>
-                        <div>
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: 800, margin: 0 }}>{user?.name}</h2>
-                            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--on-surface-variant)', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
-                                <Smartphone size={14} /> {user?.mobile}
+                        <div className="text-center sm:text-left">
+                            <h2 className="text-2xl md:text-3xl font-black tracking-tight text-on-surface">{user?.name}</h2>
+                            <span className="inline-flex items-center gap-2 mt-2 px-3 py-1 bg-surface-container-low rounded-full text-xs font-bold text-on-surface-variant border border-on-surface/5">
+                                <Smartphone size={12} className="text-primary" /> {user?.mobile}
                             </span>
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {editMode ? (
-                            <AnimatePresence>
-                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                    <div style={{ position: 'relative' }}>
-                                        <User size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
-                                        <input className="input-field" style={{ paddingLeft: '3rem' }} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Full Name" />
-                                    </div>
-                                    <div style={{ position: 'relative' }}>
-                                        <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
-                                        <input className="input-field" style={{ paddingLeft: '3rem' }} value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="Email Address" />
-                                    </div>
-                                    <button className="btn-primary" onClick={handleUpdate} style={{ marginTop: '0.5rem' }}>Save Changes</button>
-                                    <button onClick={() => setEditMode(false)} style={{ background: 'transparent', fontWeight: 700, fontSize: '0.875rem', color: 'var(--on-surface-variant)' }}>Cancel</button>
+                    <div className="flex flex-col gap-4">
+                        <AnimatePresence mode="wait">
+                            {editMode ? (
+                                <motion.div
+                                    key="edit"
+                                    initial={{ opacity: 0, scale: 0.98 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.98 }}
+                                    className="flex flex-col gap-3"
+                                >
+                                    <input className="w-full px-5 py-4 bg-surface-container-low rounded-2xl border-none outline-none focus:ring-2 ring-primary/20 transition-all font-bold text-sm" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="Full Name" />
+                                    <input className="w-full px-5 py-4 bg-surface-container-low rounded-2xl border-none outline-none focus:ring-2 ring-primary/20 transition-all font-bold text-sm" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} placeholder="Email Address" />
+                                    <button className="w-full py-4 mt-2 bg-primary text-white rounded-2xl font-black tracking-widest uppercase text-[10px] shadow-lg shadow-primary/20" onClick={handleUpdate}>Save Identity</button>
+                                    <button onClick={() => setEditMode(false)} className="py-2 text-[10px] font-black text-on-surface-variant/40 hover:text-primary transition-colors uppercase tracking-widest">Discard</button>
                                 </motion.div>
-                            </AnimatePresence>
-                        ) : (
-                            <>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem', background: 'var(--surface-container-low)', borderRadius: '1.5rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <Mail size={20} color="var(--primary)" />
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--on-surface-variant)' }}>EMAIL</span>
-                                            <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>{user?.email || 'Not set'}</span>
+                            ) : (
+                                <motion.div key="view" className="flex flex-col gap-3">
+                                    <div className="flex items-center justify-between p-5 bg-surface-container-low/50 rounded-3xl group cursor-pointer border border-transparent hover:border-primary/10 transition-all" onClick={() => setEditMode(true)}>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 rounded-xl bg-surface-container-lowest flex items-center justify-center shadow-sm">
+                                                <Mail size={18} className="text-primary" />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[9px] font-black text-on-surface-variant/50 uppercase tracking-widest">Email</span>
+                                                <span className="text-sm font-bold truncate max-w-[150px]">{user?.email || 'Not set'}</span>
+                                            </div>
+                                        </div>
+                                        <ChevronRight size={16} className="text-on-surface-variant opacity-30 group-hover:translate-x-1 transition-all" />
+                                    </div>
+
+                                    <div className="flex items-center gap-4 p-5 bg-surface-container-low/30 rounded-3xl opacity-50 grayscale border border-dashed border-on-surface/10">
+                                        <Calendar size={18} className="text-primary" />
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest">Registry Date</span>
+                                            <span className="text-sm font-bold uppercase tracking-tighter">March 2026</span>
                                         </div>
                                     </div>
-                                    <button onClick={() => setEditMode(true)} style={{ color: 'var(--primary)', background: 'transparent' }}>
-                                        <ChevronRight size={20} />
-                                    </button>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.25rem', background: 'var(--surface-container-low)', borderRadius: '1.5rem', opacity: 0.5 }}>
-                                    <Calendar size={20} color="var(--primary)" />
-                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--on-surface-variant)' }}>JOINED</span>
-                                        <span style={{ fontWeight: 700, fontSize: '0.875rem' }}>March 2026</span>
-                                    </div>
-                                </div>
-                            </>
-                        )}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Editorial Archive - Bento Item */}
-                <div className="editorial-shadow" style={{ gridColumn: 'span 7', background: 'var(--surface-container-lowest)', borderRadius: '2.5rem', padding: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <h3 className="title-lg" style={{ margin: 0 }}>Editorial Archive</h3>
-                        <div style={{ padding: '8px 16px', background: 'var(--surface-container-low)', borderRadius: 'var(--radius-full)', fontSize: '0.75rem', fontWeight: 800, color: 'var(--primary)' }}>
-                            {orders.length} ENTRIES
+                <div className="editorial-shadow lg:col-span-7 bg-surface-container-lowest rounded-[2.5rem] p-8 md:p-10 flex flex-col gap-8 h-fit lg:min-h-[600px] border border-on-surface/5">
+                    <div className="flex justify-between items-end">
+                        <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-black text-primary tracking-[0.2em] uppercase opacity-60">Archive</span>
+                            <h3 className="text-3xl font-serif italic text-on-surface">Curation History</h3>
+                        </div>
+                        <div className="px-4 py-2 bg-on-surface text-surface rounded-full text-[9px] font-black tracking-widest">
+                            {orders.length} ITEMS
                         </div>
                     </div>
 
-                    <div className="no-scrollbar" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div className="no-scrollbar overflow-y-auto flex flex-col gap-4 max-h-[500px] lg:max-h-none">
                         {orders.length === 0 ? (
-                            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.3, gap: '1rem', minHeight: '300px' }}>
-                                <Package size={48} />
-                                <p className="body-md">Archive is awaiting your first curation.</p>
+                            <div className="flex-1 flex flex-col items-center justify-center opacity-20 gap-4 py-20 border-2 border-dashed border-on-surface/10 rounded-[2rem]">
+                                <Package size={64} strokeWidth={1} />
+                                <p className="text-xs font-black tracking-widest uppercase text-center">No curations yet.</p>
                             </div>
                         ) : (
-                            orders.map(order => (
-                                <motion.div 
-                                    key={order._id} 
-                                    whileHover={{ x: 8 }}
-                                    style={{ 
-                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-                                        padding: '1.25rem', background: 'var(--surface-container-low)', borderRadius: '1.5rem',
-                                        transition: 'background 0.3s ease'
-                                    }}
+                            orders.map((order, idx) => (
+                                <motion.div
+                                    key={order._id}
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: idx * 0.05 }}
+                                    className="group flex flex-col sm:flex-row sm:items-center justify-between p-5 bg-surface-container-low/40 rounded-[2rem] hover:bg-on-surface hover:text-surface transition-all duration-500 border border-on-surface/5"
                                 >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                                        <div style={{ width: '48px', height: '48px', background: 'white', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            <Utensils size={24} color="var(--primary)" />
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-14 h-14 bg-surface-container-lowest rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-90 transition-transform">
+                                            <Utensils size={24} className="text-primary" />
                                         </div>
-                                        <div>
-                                            <h4 style={{ fontSize: '1rem', fontWeight: 800, margin: 0 }}>#{order._id.slice(-6).toUpperCase()}</h4>
-                                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--on-surface-variant)' }}>Table {order.tableNumber} • {new Date(order.createdAt).toLocaleDateString()}</span>
+                                        <div className="flex flex-col">
+                                            <h4 className="text-lg font-black tracking-tighter">#{order._id.slice(-6).toUpperCase()}</h4>
+                                            <span className="text-[10px] font-bold text-on-surface-variant group-hover:text-surface/60 uppercase tracking-wider">
+                                                Table {order.tableNumber} • {new Date(order.createdAt).toLocaleDateString()}
+                                            </span>
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <span style={{ fontSize: '0.875rem', fontWeight: 800 }}>₹{order.totalAmount}</span>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end', marginTop: '2px' }}>
-                                                <div style={{ 
-                                                    width: '6px', height: '6px', borderRadius: '50%', 
-                                                    background: order.status === 'Completed' ? '#4CAF50' : 
-                                                               order.status === 'Rejected' ? 'var(--primary)' : 'var(--secondary)'
-                                                }}></div>
-                                                <span style={{ 
-                                                    fontSize: '0.65rem', fontWeight: 800, 
-                                                    color: order.status === 'Completed' ? '#4CAF50' : 
-                                                           order.status === 'Rejected' ? 'var(--primary)' : 'var(--secondary)'
-                                                }}>{order.status.toUpperCase()}</span>
+
+                                    <div className="flex items-center justify-between sm:justify-end gap-6 mt-4 sm:mt-0 pt-4 sm:pt-0 border-t sm:border-t-0 border-on-surface/5">
+                                        <div className="text-left sm:text-right">
+                                            <span className="text-xl font-black tracking-tighter italic">₹{order.totalAmount}</span>
+                                            <div className="flex items-center gap-2 sm:justify-end mt-1">
+                                                <div className={`w-1.5 h-1.5 rounded-full ${order.status === 'Completed' ? 'bg-green-500' : 'bg-primary'}`} />
+                                                <span className={`text-[9px] font-black uppercase tracking-widest ${order.status === 'Completed' ? 'text-green-500' : 'text-primary'} group-hover:text-surface`}>
+                                                    {order.status}
+                                                </span>
                                             </div>
                                         </div>
-                                        <ChevronRight size={20} color="var(--on-surface-variant)" opacity={0.3} />
+                                        <Settings size={20} className="text-on-surface-variant opacity-20 group-hover:opacity-100 group-hover:rotate-180 transition-all duration-700" />
                                     </div>
                                 </motion.div>
                             ))
@@ -202,8 +236,8 @@ const ProfilePage = () => {
     );
 };
 
-const Utensils = ({ size, color }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const Utensils = ({ size, className }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
         <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
         <path d="M7 2v20" />
         <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />

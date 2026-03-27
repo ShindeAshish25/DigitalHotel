@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { logoutUser } from '../../slices/authSlice';
 import { motion } from 'framer-motion';
 import { 
     User, 
@@ -13,11 +15,14 @@ import {
     TrendingUp,
     CheckCircle2,
     Calendar,
-    Save
+    Save,
+    LogOut
 } from 'lucide-react';
 
 const AdminProfile = () => {
     const { user } = useSelector((state) => state.auth);
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
     const [historicalOrders, setHistoricalOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [adminNotes, setAdminNotes] = useState(() => {
@@ -45,6 +50,11 @@ const AdminProfile = () => {
         localStorage.setItem('adminProfileNotes', adminNotes);
         setSavedNotice(true);
         setTimeout(() => setSavedNotice(false), 2000);
+    };
+
+    const handleLogout = async () => {
+        await dispatch(logoutUser());
+        navigate('/admin/login');
     };
 
     return (
@@ -91,6 +101,15 @@ const AdminProfile = () => {
                                 </div>
                                 <span className="font-bold text-on-surface">+{user?.mobile || 'N/A'}</span>
                             </div>
+
+                            {/* Logout Button */}
+                            <button
+                                onClick={handleLogout}
+                                className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-red-50 text-red-600 font-bold hover:bg-red-600 hover:text-white transition-all duration-300 border border-red-100 hover:border-transparent"
+                            >
+                                <LogOut size={18} />
+                                Sign Out of Admin
+                            </button>
                         </div>
                     </motion.div>
 
