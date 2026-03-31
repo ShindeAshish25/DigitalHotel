@@ -23,8 +23,8 @@ const Dashboard = () => {
     }, [dispatch]);
 
     const filteredDishes = dishes.filter(dish => {
-        const matchesCategory = selectedCategory === 'All' || dish.category?.name === selectedCategory;
-        const matchesSearch = dish.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = selectedCategory === 'All' || dish?.category?.name === selectedCategory;
+        const matchesSearch = dish?.name?.toLowerCase().includes(searchQuery?.toLowerCase());
         return matchesCategory && matchesSearch;
     });
 
