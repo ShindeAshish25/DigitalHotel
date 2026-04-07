@@ -20,11 +20,11 @@ const upload = multer({ storage });
 // Upload Profile Image
 router.post('/upload', auth, upload.single('avatar'), async (req, res) => {
     if (!req.file) return res.status(400).json({ msg: 'No file uploaded' });
-    
-    const user = await User.findByIdAndUpdate(req.user.id, { 
-        avatarUrl: `/uploads/${req.file.filename}` 
+
+    const user = await User.findByIdAndUpdate(req.user.id, {
+        avatarUrl: `/uploads/${req.file.filename}`
     }, { new: true });
-    
+
     res.json(user);
 });
 

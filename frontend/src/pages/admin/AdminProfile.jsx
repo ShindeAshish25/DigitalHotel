@@ -16,7 +16,10 @@ import {
     CheckCircle2,
     Calendar,
     Save,
-    LogOut
+    LogOut,
+    QrCode,
+    Download,
+    ExternalLink
 } from 'lucide-react';
 
 const AdminProfile = () => {
@@ -29,6 +32,8 @@ const AdminProfile = () => {
         return localStorage.getItem('adminProfileNotes') || '';
     });
     const [savedNotice, setSavedNotice] = useState(false);
+    const [qrData, setQrData] = useState(null);
+    const [loadingQr, setLoadingQr] = useState(false);
 
     useEffect(() => {
         const fetchOrders = async () => {
@@ -44,6 +49,22 @@ const AdminProfile = () => {
             }
         };
         fetchOrders();
+    }, []);
+
+    const fetchQrCode = async () => {
+        setLoadingQr(true);
+        try {
+            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/qr`, { withCredentials: true });
+            setQrData(res.data);
+        } catch (err) {
+            console.error('Failed to fetch QR code:', err);
+        } finally {
+            setLoadingQr(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchQrCode();
     }, []);
 
     const handleSaveNotes = () => {
@@ -165,6 +186,60 @@ const AdminProfile = () => {
                             placeholder="Draft menu ideas, operational suggestions, or internal notes here. These are saved exclusively to your local profile..."
                             className="flex-1 w-full bg-surface-container border-none rounded-2xl p-4 text-on-surface text-sm focus:ring-2 focus:ring-primary/20 resize-none"
                         ></textarea>
+                    </motion.div>
+
+                    {/* QR Code Bento */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="bg-surface-container-lowest p-8 rounded-[2.5rem] border border-outline-variant/10 shadow-sm flex flex-col items-center text-center relative overflow-hidden"
+                    >
+                        <div className="w-full flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3 text-on-surface">
+                                <QrCode size={20} className="text-primary" />
+                                <h3 className="text-xl font-bold">Menu QR Access</h3>
+                            </div>
+                            <button 
+                                onClick={fetchQrCode}
+                                className="text-primary hover:bg-primary/10 p-2 rounded-full transition-colors"
+                                title="Refresh QR"
+                                disabled={loadingQr}
+                            >
+                                <TrendingUp size={18} className={loadingQr ? 'animate-spin' : ''} />
+                            </button>
+                        </div>
+
+                        {loadingQr ? (
+                            <div className="w-43 h-43 bg-surface-container-low animate-pulse rounded-3xl flex items-center justify-center mx-auto">
+                                <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                            </div>
+                        ) : qrData?.qrCode ? (
+                            <div className="space-y-6 w-full">
+                                <div className="relative group mx-auto w-43 h-43 bg-white p-3 rounded-3xl shadow-inner border border-outline-variant/20">
+                                    <img src={qrData.qrCode} alt="Menu QR Code" className="w-full h-full object-contain" />
+                                    <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity rounded-3xl flex items-center justify-center">
+                                        <a href={qrData.qrCode} download={`menu-qr-${user?.name || 'admin'}.png`} className="p-3 bg-white text-primary rounded-full shadow-lg">
+                                            <Download size={20} />
+                                        </a>
+                                    </div>
+                                </div>
+                                <div className="p-4 bg-surface-container-low rounded-2xl text-left overflow-hidden">
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant block mb-1">Direct Menu URL</span>
+                                    <div className="flex items-center justify-between gap-2 overflow-hidden">
+                                        <span className="text-xs font-bold text-on-surface truncate flex-1">{qrData.menuUrl}</span>
+                                        <a href={qrData.menuUrl} target="_blank" rel="noreferrer" className="text-primary hover:text-primary/80">
+                                            <ExternalLink size={14} />
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="py-10 text-center opacity-50">
+                                <QrCode size={48} className="mx-auto mb-2" />
+                                <p className="text-sm font-bold">QR code could not be loaded.</p>
+                            </div>
+                        )}
                     </motion.div>
                 </div>
 

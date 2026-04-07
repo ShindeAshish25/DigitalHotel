@@ -9,10 +9,11 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
-  const { items } = useSelector((state) => state.cart);
+  const { items, adminId } = useSelector((state) => state.cart);
+  const isPublicMenu = location.pathname.startsWith('/menu/');
 
   const navItems = [
-    { icon: Home, label: 'Menu', path: '/', action: () => navigate('/') },
+    { icon: Home, label: 'Menu', path: isPublicMenu ? location.pathname : (adminId ? `/menu/${adminId}` : '/'), action: () => navigate(isPublicMenu ? location.pathname : (adminId ? `/menu/${adminId}` : '/')) },
     { icon: ClipboardList, label: 'Orders', path: '/track-order', action: () => navigate('/track-order') },
     { icon: ShoppingBag, label: 'Cart', path: 'cart', action: () => dispatch(toggleCart()), badge: items.length },
     { icon: User, label: 'Profile', path: '/profile', action: () => navigate('/profile') },
@@ -22,7 +23,7 @@ const BottomNav = () => {
     <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[90%] max-w-md">
       <nav className="glass-effect rounded-full px-6 py-3 flex justify-between items-center shadow-2xl border border-white/20">
         {navItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = item.path !== 'cart' && (location.pathname === item.path || (item.label === 'Menu' && isPublicMenu));
           const Icon = item.icon;
           
           return (

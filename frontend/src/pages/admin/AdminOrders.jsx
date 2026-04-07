@@ -16,10 +16,9 @@ import io from 'socket.io-client';
 // Ensure Axios sends the JWT cookie for authentication
 axios.defaults.withCredentials = true;
 
-// Optimized Socket Connection for Port 5000
-const socket = io('http://localhost:5000', {
-    transports: ['websocket'],
-    withCredentials: true
+// Optimized Socket Connection
+const socket = io(import.meta.env.VITE_SOCKET_URL || window.location.origin, {
+    transports: ['websocket', 'polling'],
 });
 
 const AdminOrders = () => {
@@ -109,24 +108,8 @@ const AdminOrders = () => {
         setLoading(true);
 
         try {
-            // 1. Mark Order as Completed
-            await axios.put(`/api/orders/${receiptOrder._id}/status`, { status: 'Completed' });
-
-            // 2. Free the Table
-            let tableId = receiptOrder.tableId?._id || receiptOrder.tableId;
-
-            // FIX: If tableId is missing, find the table by number first
-            if (!tableId) {
-                const tablesRes = await axios.get('/api/tables');
-                const targetTable = tablesRes.data.find(t => t.number === receiptOrder.tableNumber);
-                tableId = targetTable?._id;
-            }
-
-            if (tableId) {
-                await axios.put(`/api/tables/${tableId}`, { status: 'Available' });
-            } else {
-                console.error("Could not find table to free up.");
-            }
+            // 1. Let the backend handle both closing the order and freeing the table:
+            await axios.post(`/api/orders/${receiptOrder._id}/bill`);
 
             // 3. Cleanup
             setReceiptOrder(null);
@@ -236,9 +219,16 @@ const AdminOrders = () => {
                                             <button onClick={() => updateStatus(order._id, 'Accepted')} className="flex-[2] bg-gray-900 text-white py-4 rounded-2xl font-black text-xs uppercase shadow-lg shadow-gray-200">Accept Order</button>
                                         </>
                                     ) : (
-                                        <button onClick={() => showBillPopup(order)} className="w-full bg-red-600 text-white py-5 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-xl shadow-red-100">
-                                            <Receipt size={18} /> View Bill & Checkout
-                                        </button>
+                                        <div className="flex flex-col gap-2 w-full">
+                                            {/* Advanced Status Setters for Customers */}
+                                            <div className="flex gap-2">
+                                                {['Accepted', 'Preparing'].includes(order.status) && <button onClick={() => updateStatus(order._id, 'Ready')} className="flex-1 py-2 rounded-xl text-[10px] font-bold uppercase bg-blue-50 text-blue-600 hover:bg-blue-100">Ready</button>}
+                                                {order.status === 'Ready' && <button onClick={() => updateStatus(order._id, 'Served')} className="flex-1 py-2 rounded-xl text-[10px] font-bold uppercase bg-purple-50 text-purple-600 hover:bg-purple-100">Served</button>}
+                                            </div>
+                                            <button onClick={() => showBillPopup(order)} className="w-full bg-red-600 text-white py-4 rounded-2xl font-black text-xs uppercase flex items-center justify-center gap-2 shadow-xl shadow-red-100 mt-2">
+                                                <Receipt size={18} /> View Bill & Checkout
+                                            </button>
+                                        </div>
                                     )}
                                 </div>
                             </motion.div>

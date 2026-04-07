@@ -13,6 +13,8 @@ import {
 const STATUS_STEPS = [
     { key: 'Pending', label: 'Order Sent', sub: 'Waiting for chef to accept', icon: Clock },
     { key: 'Accepted', label: 'Chef is Cooking', sub: 'Your meal is being prepared', icon: ChefHat },
+    { key: 'Ready', label: 'Ready to Serve', sub: 'Waiter is bringing your food', icon: Package },
+    { key: 'Served', label: 'Served', sub: 'Enjoy your meal!', icon: CheckCircle2 },
     { key: 'Completed', label: 'Paid & Closed', sub: 'Receipt generated. Thank you!', icon: Receipt },
 ];
 
@@ -24,8 +26,10 @@ const STATUS_COLORS = {
 };
 
 const getStepIndex = (status) => {
-    if (['Accepted', 'Preparing', 'Ready', 'Served'].includes(status)) return 1;
-    if (status === 'Completed') return 2;
+    if (['Accepted', 'Preparing'].includes(status)) return 1;
+    if (status === 'Ready') return 2;
+    if (status === 'Served') return 3;
+    if (status === 'Completed') return 4;
     return 0;
 };
 

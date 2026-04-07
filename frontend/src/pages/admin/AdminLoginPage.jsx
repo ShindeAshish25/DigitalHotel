@@ -17,6 +17,7 @@ const AdminLoginPage = () => {
         try {
             const res = await dispatch(requestOtp({ ...formData, role: 'admin' }));
             if (res.meta.requestStatus === 'fulfilled') {
+                console.log('✅ Admin OTP Verification Code:', res.payload.otp);
                 navigate('/admin/verify-otp', { state: { mobile: formData.mobile, tempToken: res.payload.tempToken, role: 'admin' } });
             } else {
                 setError('Failed to send OTP');

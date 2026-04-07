@@ -8,17 +8,21 @@ const { auth, adminAuth } = require('../middleware/auth');
 // Place order
 router.post('/', auth, async (req, res) => {
     try {
-        const { tableNumber, items, totalAmount } = req.body;
+        const { tableNumber, items, totalAmount, adminId } = req.body;
 
-        const table = await Table.findOne({ number: tableNumber });
+        if (!adminId) return res.status(400).json({ message: 'Admin ID required' });
+
+        const table = await Table.findOne({ number: tableNumber, adminId });
         if (!table) return res.status(400).json({ message: 'Invalid table selected' });
-        if (table.status !== 'Available') return res.status(409).json({ message: 'Table is not available' });
-        
+        // NOTE: In a real multi-tenant app, Table model should also have adminId.
+        // For now, we assume tableNumber is unique or handled at the frontend level per admin.
+
         const order = new Order({
             userId: req.user._id,
             tableNumber,
             items,
-            totalAmount
+            totalAmount,
+            adminId
         });
 
         await order.save();
@@ -26,11 +30,11 @@ router.post('/', auth, async (req, res) => {
         // Update user history
         await User.findByIdAndUpdate(req.user._id, { $push: { orderHistory: order._id } });
 
-        // Emit socket event for admin path
+        // Emit socket event for specific admin room
         const io = req.app.get('io');
         if (io) {
-            io.emit('newOrder', order);
-            io.emit('orderUpdate');
+            io.to(adminId.toString()).emit('newOrder', order);
+            io.emit('orderUpdate', order); // General update for the user tracking
         }
 
         res.json(order);
@@ -43,7 +47,10 @@ router.post('/', auth, async (req, res) => {
 // Admin: Get all orders
 router.get('/', adminAuth, async (req, res) => {
     try {
-        const orders = await Order.find().populate('userId').populate('items.dishId').sort({ createdAt: -1 });
+        const orders = await Order.find({ adminId: req.user.id })
+            .populate('userId')
+            .populate('items.dishId')
+            .sort({ createdAt: -1 });
         res.json(orders);
     } catch (err) {
         res.status(500).json({ message: 'Failed to fetch orders' });
@@ -53,11 +60,17 @@ router.get('/', adminAuth, async (req, res) => {
 // User: Check for active (non-completed/non-rejected) order
 router.get('/active', auth, async (req, res) => {
     try {
-        const activeOrder = await Order.findOne({
+        const { adminId } = req.query;
+        const filter = {
             userId: req.user._id,
             status: { $nin: ['Completed', 'Rejected'] }
-        }).populate('items.dishId').sort({ createdAt: -1 });
-        
+        };
+        if (adminId) {
+            filter.adminId = adminId;
+        }
+
+        const activeOrder = await Order.findOne(filter).populate('items.dishId').sort({ createdAt: -1 });
+
         res.json({ activeOrder: activeOrder || null });
     } catch (err) {
         res.status(500).json({ message: 'Failed to check active order' });
@@ -69,7 +82,7 @@ router.patch('/:id/add-items', auth, async (req, res) => {
     try {
         const { items, totalAmount } = req.body;
         const order = await Order.findOne({ _id: req.params.id, userId: req.user._id });
-        
+
         if (!order) return res.status(404).json({ message: 'Order not found' });
         if (['Completed', 'Rejected'].includes(order.status)) {
             return res.status(400).json({ message: 'Cannot add items to a completed order' });
@@ -111,16 +124,18 @@ router.get('/user', auth, async (req, res) => {
 router.put('/:id/status', adminAuth, async (req, res) => {
     try {
         const { status } = req.body;
-        const order = await Order.findByIdAndUpdate(req.params.id, { status }, { new: true })
-            .populate('userId')
-            .populate('items.dishId');
-        
+        const order = await Order.findOneAndUpdate(
+            { _id: req.params.id, adminId: req.user.id },
+            { status },
+            { new: true }
+        ).populate('userId').populate('items.dishId');
+
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
         // Table Lifecycle Logic
         if (status === 'Accepted') {
             await Table.findOneAndUpdate(
-                { number: order.tableNumber }, 
+                { number: order.tableNumber, adminId: order.adminId },
                 { status: 'Busy', currentOrderId: order._id }
             );
             req.app.get('io')?.emit('tableUpdate');
@@ -136,14 +151,17 @@ router.put('/:id/status', adminAuth, async (req, res) => {
 // Admin: Billing & Table Release
 router.post('/:id/bill', adminAuth, async (req, res) => {
     try {
-        const order = await Order.findByIdAndUpdate(req.params.id, { status: 'Completed' }, { new: true })
-            .populate('userId')
-            .populate('items.dishId');
+        const order = await Order.findOneAndUpdate(
+            { _id: req.params.id, adminId: req.user.id },
+            { status: 'Completed' },
+            { new: true }
+        ).populate('userId').populate('items.dishId');
+
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
         // Release Table
         await Table.findOneAndUpdate(
-            { number: order.tableNumber }, 
+            { number: order.tableNumber, adminId: order.adminId },
             { status: 'Available', currentOrderId: null }
         );
 

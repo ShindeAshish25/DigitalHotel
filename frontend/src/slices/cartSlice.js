@@ -3,12 +3,16 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   items: [],
   isOpen: false,
+  adminId: null, // Track which admin this cart belongs to
 };
 
 const cartSlice = createSlice({
   name: 'cart',
   initialState,
   reducers: {
+    setAdminId: (state, action) => {
+      state.adminId = action.payload;
+    },
     addToCart: (state, action) => {
       const existing = state.items.find(item => item._id === action.payload._id);
       if (existing) {
@@ -33,5 +37,5 @@ const cartSlice = createSlice({
   },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, clearCart, toggleCart } = cartSlice.actions;
+export const { setAdminId, addToCart, removeFromCart, updateQuantity, clearCart, toggleCart } = cartSlice.actions;
 export default cartSlice.reducer;

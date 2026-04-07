@@ -18,6 +18,7 @@ const LoginPage = () => {
     const role = isAdmin ? 'admin' : 'user';
     const res = await dispatch(requestOtp({ ...formData, role }));
     if (res.meta.requestStatus === 'fulfilled') {
+      console.log('✅ OTP Verification Code:', res.payload.otp);
       navigate('/verify-otp', { state: { mobile: formData.mobile, tempToken: res.payload.tempToken, role, from } });
     } else {
       alert('Failed to send OTP. Please try again.');

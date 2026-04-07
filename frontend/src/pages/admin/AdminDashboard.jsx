@@ -12,7 +12,7 @@ import {
 import io from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
 
-const socket = io(import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000');
+const socket = io(import.meta.env.VITE_SOCKET_URL || window.location.origin, { transports: ['websocket', 'polling'] });
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const [stats, setStats] = useState({
@@ -30,8 +30,8 @@ const AdminDashboard = () => {
         const fetchData = async () => {
             try {
                 const [ordersRes, tablesRes] = await Promise.all([
-                    axios.get(`/api/orders`),
-                    axios.get(`/api/tables`)
+                    axios.get(`${import.meta.env.VITE_API_BASE_URL}/orders`),
+                    axios.get(`${import.meta.env.VITE_API_BASE_URL}/tables/admin`)
                 ]);
 
                 const orders = ordersRes.data;
@@ -167,7 +167,7 @@ const AdminDashboard = () => {
                         <div key={order._id} className="bg-surface-container-low p-6 rounded-3xl border border-outline-variant/20 flex gap-6">
                             <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 bg-surface-variant flex items-center justify-center text-on-surface-variant">
                                 {order.items[0]?.dishId?.image ? (
-                                    <img src={`${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}${order.items[0].dishId.image}`} alt="Dish" className="w-full h-full object-cover" />
+                                    <img src={order.items[0].dishId.image.startsWith('http') ? order.items[0].dishId.image : `${import.meta.env.VITE_API_BASE_URL?.replace('/api', '') || ''}${order.items[0].dishId.image}`} alt="Dish" className="w-full h-full object-cover" />
                                 ) : (
                                     <ShoppingBag />
                                 )}

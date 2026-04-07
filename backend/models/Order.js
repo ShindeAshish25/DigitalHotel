@@ -14,6 +14,7 @@ const orderSchema = new mongoose.Schema({
         enum: ['Pending', 'Accepted', 'Preparing', 'Serving', 'Ready', 'Served', 'Completed', 'Rejected'],
         default: 'Pending'
     },
+    adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     createdAt: { type: Date, default: Date.now }
 });
 

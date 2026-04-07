@@ -9,6 +9,7 @@ const menuSchema = new mongoose.Schema({
     image: { type: String, default: '' },
     isVeg: { type: Boolean, default: true },
     isAvailable: { type: Boolean, default: true },
+    adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     createdAt: { type: Date, default: Date.now }
 }, { toJSON: { virtuals: true }, toObject: { virtuals: true } });
 

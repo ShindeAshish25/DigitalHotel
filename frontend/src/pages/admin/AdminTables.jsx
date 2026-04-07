@@ -22,7 +22,7 @@ const AdminTables = () => {
 
     const fetchTables = async () => {
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/tables`);
+            const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/tables/admin`);
             setTables(res.data.sort((a, b) => a.number - b.number));
         } catch (err) {
             console.error("Tables fetch error:", err);
@@ -36,7 +36,7 @@ const AdminTables = () => {
     const addTable = async () => {
         if (!newTable.number) return;
         try {
-            await axios.post(`/api/tables`, newTable);
+            await axios.post(`${import.meta.env.VITE_API_BASE_URL}/tables`, newTable);
             setIsAddOpen(false);
             setNewTable({ number: '', capacity: 4 });
             fetchTables();
@@ -48,7 +48,7 @@ const AdminTables = () => {
     const updateTable = async () => {
         if (!editTable?._id) return;
         try {
-            await axios.put(`/api//tables/${editTable._id}`, {
+            await axios.put(`${import.meta.env.VITE_API_BASE_URL}/tables/${editTable._id}`, {
                 number: Number(editTable.number),
                 capacity: Number(editTable.capacity),
             });
@@ -63,7 +63,7 @@ const AdminTables = () => {
     const deleteTable = async (id) => {
         if (!window.confirm("Are you sure you want to remove this table?")) return;
         try {
-            await axios.delete(`/api//tables/${id}`);
+            await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/tables/${id}`);
             fetchTables();
         } catch (err) {
             console.error("Delete table error:", err);

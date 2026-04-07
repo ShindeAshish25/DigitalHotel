@@ -11,16 +11,20 @@ const TableSelection = () => {
     const [selectedTable, setSelectedTable] = useState(null);
     const [loading, setLoading] = useState(false);
     const [activeOrder, setActiveOrder] = useState(undefined);
-    const { items } = useSelector(state => state.cart);
+    const { items, adminId } = useSelector(state => state.cart);
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const total = items.reduce((sum, item) => sum + item.finalPrice * item.quantity, 0);
+    const total = items.reduce((sum, item) => {
+        const price = Number(item.finalPrice || item.originalPrice || 0);
+        return sum + (price * (item.quantity || 1));
+    }, 0);
 
     useEffect(() => {
         const checkActiveOrder = async () => {
             try {
-                const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/orders/active`);
+                const url = adminId ? `${import.meta.env.VITE_API_BASE_URL}/orders/active?adminId=${adminId}` : `${import.meta.env.VITE_API_BASE_URL}/orders/active`;
+                const res = await axios.get(url);
                 setActiveOrder(res.data.activeOrder || null);
             } catch {
                 setActiveOrder(null);
@@ -30,7 +34,10 @@ const TableSelection = () => {
 
         const fetchTables = async () => {
             try {
-                const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/tables`);
+                const url = adminId 
+                    ? `${import.meta.env.VITE_API_BASE_URL}/tables?adminId=${adminId}`
+                    : `${import.meta.env.VITE_API_BASE_URL}/tables`;
+                const res = await axios.get(url);
                 setTables(res.data);
             } catch (err) {
                 console.error("Failed to fetch tables", err);
@@ -44,7 +51,11 @@ const TableSelection = () => {
         setLoading(true);
         try {
             await axios.patch(`${import.meta.env.VITE_API_BASE_URL}/orders/${activeOrder._id}/add-items`, {
-                items: items.map(i => ({ dishId: i._id, quantity: i.quantity, price: i.finalPrice })),
+                items: items.map(i => ({ 
+                    dishId: i._id, 
+                    quantity: i.quantity, 
+                    price: Number(i.finalPrice || i.originalPrice || 0) 
+                })),
                 totalAmount: total
             });
             dispatch(clearCart());
@@ -62,13 +73,19 @@ const TableSelection = () => {
         try {
             await axios.post(`${import.meta.env.VITE_API_BASE_URL}/orders`, {
                 tableNumber: selectedTable.number,
-                items: items.map(i => ({ dishId: i._id, quantity: i.quantity, price: i.finalPrice })),
-                totalAmount: total
+                items: items.map(i => ({ 
+                    dishId: i._id, 
+                    quantity: i.quantity, 
+                    price: Number(i.finalPrice || i.originalPrice || 0) 
+                })),
+                totalAmount: total,
+                adminId: adminId
             });
             dispatch(clearCart());
             navigate('/order-success', { state: { tableNumber: selectedTable.number, total } });
         } catch (err) {
-            alert('Failed to place order. Please try again.');
+            console.error(err);
+            alert(err.response?.data?.message || 'Failed to place order. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -145,7 +162,7 @@ const TableSelection = () => {
                                         </div>
                                         <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{item.name || item.dishName}</span>
                                     </div>
-                                    <span style={{ fontWeight: 800 }}>₹{(item.finalPrice * item.quantity).toFixed(0)}</span>
+                                    <span style={{ fontWeight: 800 }}>₹{((item.finalPrice || item.originalPrice) * item.quantity).toFixed(0)}</span>
                                 </div>
                             ))}
                         </div>

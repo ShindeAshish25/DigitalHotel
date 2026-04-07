@@ -19,6 +19,7 @@ const OTPPage = () => {
     const role = location.state?.role || 'user';
     const name = location.state?.name || '';
     const email = location.state?.email || '';
+    const from = location.state?.from || (role === 'admin' ? '/admin' : '/');
 
     // --- Timer Logic ---
     useEffect(() => {
@@ -66,7 +67,7 @@ const OTPPage = () => {
         const fullOtp = otp.join('');
         const res = await dispatch(verifyOTP({ mobile, otp: fullOtp, tempToken, role }));
         if (res.meta.requestStatus === 'fulfilled') {
-            navigate(role === 'admin' ? '/admin/dashboard' : '/');
+            navigate(from, { replace: true });
         } else {
             alert('Invalid verification code.');
         }

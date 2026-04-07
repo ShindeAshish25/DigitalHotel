@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const functions = require("firebase-functions");
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
@@ -66,6 +67,7 @@ app.use('/api/menu', require('./routes/menu'));
 app.use('/api/orders', require('./routes/order'));
 app.use('/api/tables', require('./routes/table'));
 app.use('/api/profile', require('./routes/profile'));
+app.use('/api/qr', require('./routes/qr'));
 
 // Serve Uploads
 app.use('/uploads', express.static('uploads'));
@@ -81,10 +83,36 @@ if (process.env.NODE_ENV === 'production') {
 // Socket handle
 io.on('connection', (socket) => {
     console.log('New client connected:', socket.id);
+
+    socket.on('join_admin', (adminId) => {
+        if (adminId) {
+            socket.join(adminId.toString());
+            console.log(`Admin joined room: ${adminId}`);
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log('Client disconnected');
     });
 });
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const PORT = parseInt(process.env.PORT, 10) || 5000;
+
+const startServer = (port) => {
+    server.listen(port, () => console.log(`Server running on port ${port}`));
+};
+
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use. Trying next port...`);
+        const fallbackPort = PORT + 1;
+        server.close(() => {
+            server.listen(fallbackPort, () => console.log(`Server running on fallback port ${fallbackPort}`));
+        });
+    } else {
+        console.error('Server error:', err);
+        process.exit(1);
+    }
+});
+
+startServer(PORT);
