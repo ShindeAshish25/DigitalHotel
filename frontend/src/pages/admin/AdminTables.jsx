@@ -12,8 +12,11 @@ import {
     ChevronDown,
     MoreHorizontal
 } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import io from 'socket.io-client';
 
 const AdminTables = () => {
+    const { user } = useSelector(state => state.auth);
     const [tables, setTables] = useState([]);
     const [isAddOpen, setIsAddOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -30,8 +33,22 @@ const AdminTables = () => {
     };
 
     useEffect(() => {
+        const socketURL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+        const socket = io(socketURL, { transports: ['websocket', 'polling'] });
+
+        if (user?._id) {
+            socket.emit('join_admin', user._id);
+        }
+
         fetchTables();
-    }, []);
+
+        socket.on('tableUpdate', fetchTables);
+
+        return () => {
+            socket.off('tableUpdate');
+            socket.disconnect();
+        };
+    }, [user]);
 
     const addTable = async () => {
         if (!newTable.number) return;

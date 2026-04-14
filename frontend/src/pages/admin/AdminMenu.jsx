@@ -50,7 +50,7 @@ const AdminMenu = () => {
     };
 
     const deleteCategory = async (id) => {
-        if (!window.confirm("Deleting a category will NOT delete the dishes in it. Continue?")) return;
+        if (!window.confirm("Are you sure you want to delete this category? All dishes inside it will also be deleted.")) return;
         try {
             await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/menu/categories/${id}`);
             fetchData();

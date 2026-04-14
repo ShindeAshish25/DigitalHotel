@@ -13,15 +13,13 @@ import {
 } from 'lucide-react';
 import io from 'socket.io-client';
 
+import { useSelector } from 'react-redux';
+
 // Ensure Axios sends the JWT cookie for authentication
 axios.defaults.withCredentials = true;
 
-// Optimized Socket Connection
-const socket = io(import.meta.env.VITE_SOCKET_URL || window.location.origin, {
-    transports: ['websocket', 'polling'],
-});
-
 const AdminOrders = () => {
+    const { user } = useSelector(state => state.auth);
     const [orders, setOrders] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [stats, setStats] = useState({ pending: 0, active: 0 });
@@ -73,6 +71,13 @@ const AdminOrders = () => {
 
     // --- Socket & Lifecycle ---
     useEffect(() => {
+        const socketURL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+        const socket = io(socketURL, { transports: ['websocket', 'polling'] });
+
+        if (user?._id) {
+            socket.emit('join_admin', user._id);
+        }
+
         fetchOrders();
 
         socket.on('newOrder', (data) => {
@@ -85,8 +90,9 @@ const AdminOrders = () => {
         return () => {
             socket.off('newOrder');
             socket.off('orderUpdate');
+            socket.disconnect();
         };
-    }, []);
+    }, [user]);
 
     // --- Status & Payment Actions ---
     const updateStatus = async (id, status) => {
