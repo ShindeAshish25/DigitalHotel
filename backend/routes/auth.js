@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const router = express.Router();
 const { z } = require('zod');
+const nodemailer = require('nodemailer');
 
 // --- Helper Functions ---
 
@@ -38,8 +39,9 @@ const otpRequestSchema = z.object({
     role: z.enum(['user', 'admin']).optional().default('user'),
     name: z.string().min(2, 'Name is required'),
     mobile: z.string().min(10, 'Valid mobile number is required'),
-    email: z.string().email('Invalid email').optional().or(z.literal(''))
+    email: z.string().email('Invalid email')
 });
+
 
 // --- Routes ---
 
@@ -50,10 +52,6 @@ router.post('/request-otp', async (req, res) => {
     try {
         const validated = otpRequestSchema.parse(req.body);
         const { role, name, mobile, email } = validated;
-
-        if (role === 'admin' && !email) {
-            return res.status(400).json({ message: 'Email is required for admin' });
-        }
 
         const currentOtp = generateRandomOTP();
 
@@ -67,7 +65,7 @@ router.post('/request-otp', async (req, res) => {
                 otpExpires: otpExpires,
                 name,
                 role,
-                email: email || undefined
+                email: email
             },
             { upsert: true, returnDocument: 'after' }
         );
@@ -79,14 +77,65 @@ router.post('/request-otp', async (req, res) => {
 
         console.log(`\n🔥 ================================================= 🔥`);
         if (role === 'admin') {
-            console.log(`👨‍🍳 [ADMIN LOGIN] OTP FOR ${mobile}: ===> ${currentOtp} <===`);
+            console.log(`👨‍🍳 [ADMIN LOGIN] OTP GENERATED FOR ${mobile} & ${email}: ===> ${currentOtp} <===`);
         } else {
-            console.log(`🍽️ [CUSTOMER LOGIN] OTP FOR ${mobile}: ===> ${currentOtp} <===`);
+            console.log(`🍽️ [CUSTOMER LOGIN] OTP GENERATED FOR ${mobile} & ${email}: ===> ${currentOtp} <===`);
         }
         console.log(`🔥 ================================================= 🔥\n`);
 
+        // --- NODEMAILER OTP DISPATCH ---
+        const transporter = nodemailer.createTransport({
+            service: 'gmail', // Standard Gmail SMTP. Need ENV config
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+            try {
+                await transporter.sendMail({
+                    from: process.env.EMAIL_USER,
+                    to: email,
+                    subject: 'Your Digital Hotel Login OTP',
+                    text: `Hello ${name},\n\nYour OTP for login is: ${currentOtp}\n\nIt is valid for 5 minutes.`,
+                    html: `
+  <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; padding: 20px; color: #333;">
+    <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+      <div style="background-color: #4A90E2; padding: 20px; text-align: center; color: white;">
+        <h1 style="margin: 0; font-size: 24px;">Digital Hotel Verification</h1>
+      </div>
+      <div style="padding: 30px; text-align: center;">
+        <p style="font-size: 16px; margin-bottom: 10px;">Hello <strong>${name}</strong>,</p>
+        <p style="color: #666;">Use the code below to sign in to your account. This code expires in 5 minutes.</p>
+        
+        <div style="margin: 30px 0; padding: 15px; background: #f8f9fa; border: 1px dashed #4A90E2; border-radius: 4px;">
+          <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #4A90E2; font-family: monospace;">
+            ${currentOtp}
+          </span>
+        </div>
+        
+        <p style="font-size: 12px; color: #999; margin-top: 20px;">
+          If you didn't request this, please ignore this email.
+        </p>
+      </div>
+      <div style="background: #eee; padding: 15px; text-align: center; font-size: 12px; color: #777;">
+        © ${new Date().getFullYear()} Digital Hotel. All rights reserved.
+      </div>
+    </div>
+  </div>
+`
+                });
+                console.log(`📧 Successfully dispatched email OTP to ${email}`);
+            } catch (mailError) {
+                console.error("❌ NodeMailer dispatch error (Check SMTP Config):", mailError.message);
+            }
+        } else {
+            console.warn("⚠️ Nodemailer skipping dispatch: EMAIL_USER or EMAIL_PASS not defined in .env");
+        }
+
         const tempToken = generateTempToken({ mobile });
-        res.status(200).json({ message: 'OTP sent successfully (Valid for 60s)', tempToken, otp: currentOtp });
+        res.status(200).json({ message: 'OTP sent successfully (Valid for 5m)', tempToken, otp: currentOtp });
     } catch (err) {
         if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
         console.error("OTP Request Error:", err);

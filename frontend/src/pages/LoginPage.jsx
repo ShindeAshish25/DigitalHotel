@@ -19,7 +19,7 @@ const LoginPage = () => {
     const res = await dispatch(requestOtp({ ...formData, role }));
     if (res.meta.requestStatus === 'fulfilled') {
       console.log('✅ OTP Verification Code:', res.payload.otp);
-      navigate('/verify-otp', { state: { mobile: formData.mobile, tempToken: res.payload.tempToken, role, from } });
+      navigate('/verify-otp', { state: { mobile: formData.mobile, email: formData.email, tempToken: res.payload.tempToken, role, from } });
     } else {
       alert('Failed to send OTP. Please try again.');
     }
@@ -82,18 +82,16 @@ const LoginPage = () => {
               />
             </div>
 
-            {isAdmin && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--on-surface-variant)', paddingLeft: '0.25rem' }}>Editorial Email</label>
-                <input 
-                  type="email" 
-                  placeholder="name@zestful.com" 
-                  className="input-field" 
-                  required 
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
-                />
-              </div>
-            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--on-surface-variant)', paddingLeft: '0.25rem' }}>Email Address</label>
+              <input 
+                type="email" 
+                placeholder="name@domain.com" 
+                className="input-field" 
+                required 
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })} 
+              />
+            </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--on-surface-variant)', paddingLeft: '0.25rem' }}>Mobile Number</label>
