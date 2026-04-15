@@ -45,30 +45,30 @@ const AppContent = () => {
   // Handle Real-Time Notifications Globablly
   useEffect(() => {
     if (!isAuthenticated || !user) return;
-    
+
     // In production we proxy /socket.io through Vite, or rely on same origin
     const socketURL = import.meta.env.VITE_SOCKET_URL || (import.meta.env.MODE === 'development' ? 'http://127.0.0.1:5000' : window.location.origin);
     const socket = io(socketURL);
-    
+
     if (user.role === 'admin') {
       socket.emit('join_admin', user._id);
       socket.on('newOrder', (order) => {
-         if (order && order._id) {
-           toast.success(`New Order #${order._id.slice(-6).toUpperCase()} received at Table ${order.tableNumber}!`);
-         }
+        if (order && order._id) {
+          toast.success(`New Order #${order._id.slice(-6).toUpperCase()} received at Table ${order.tableNumber}!`);
+        }
       });
     }
 
     if (user.role === 'user') {
       socket.on('orderUpdate', (updatedOrder) => {
-         if (!updatedOrder) return;
-         const belongsToUser = updatedOrder.userId === user._id || updatedOrder.userId?._id === user._id;
-         if (belongsToUser) {
-            toast(`Your order status is now: ${updatedOrder.status}`, { icon: '👏' });
-            if (updatedOrder.status === 'Completed' || updatedOrder.status === 'Served') {
-                toast.success('Your food is ready! Please proceed with payment.', { duration: 6000 });
-            }
-         }
+        if (!updatedOrder) return;
+        const belongsToUser = updatedOrder.userId === user._id || updatedOrder.userId?._id === user._id;
+        if (belongsToUser) {
+          toast(`Your order status is now: ${updatedOrder.status}`, { icon: '👏' });
+          if (updatedOrder.status === 'Completed' || updatedOrder.status === 'Served') {
+            toast.success('Your food is ready! Please proceed with payment.', { duration: 6000 });
+          }
+        }
       });
     }
 
@@ -76,11 +76,11 @@ const AppContent = () => {
   }, [isAuthenticated, user]);
 
   if (isInitializing) {
-     return (
-        <div className="flex h-screen items-center justify-center bg-surface">
-             <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-        </div>
-     );
+    return (
+      <div className="flex h-screen items-center justify-center bg-surface">
+        <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   const AdminRoute = ({ children }) => {
@@ -108,14 +108,14 @@ const AppContent = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/verify-otp" element={<OTPPage />} />
         <Route path="/menu/:adminId" element={<UserMenu />} />
-        
+
         {/* Protected User Routes */}
         <Route path="/" element={isAuthenticated ? (user?.role === 'admin' ? <Navigate to="/admin" /> : <Dashboard />) : <Navigate to="/login" state={{ from: location }} replace />} />
         <Route path="/select-table" element={isAuthenticated ? <TableSelection /> : <Navigate to="/login" state={{ from: location }} replace />} />
         <Route path="/order-success" element={isAuthenticated ? <OrderSuccess /> : <Navigate to="/login" state={{ from: location }} replace />} />
         <Route path="/track-order" element={isAuthenticated ? <OrderTracking /> : <Navigate to="/login" state={{ from: location }} replace />} />
         <Route path="/profile" element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" state={{ from: location }} replace />} />
-        
+
         {/* Admin Auth */}
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin/verify-otp" element={<AdminOTPPage />} />

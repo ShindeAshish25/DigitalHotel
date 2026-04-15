@@ -138,10 +138,10 @@ router.put('/:id/status', adminAuth, async (req, res) => {
                 { number: order.tableNumber, adminId: order.adminId },
                 { status: 'Busy', currentOrderId: order._id }
             );
-            req.app.get('io')?.emit('tableUpdate');
+            req.app.get('io')?.to(order.adminId.toString()).emit('tableUpdate');
         }
 
-        req.app.get('io')?.emit('orderUpdate', order);
+        req.app.get('io')?.to(order.adminId.toString()).emit('orderUpdate', order);
         res.json(order);
     } catch (err) {
         res.status(500).json({ message: 'Status update failed' });
@@ -167,8 +167,9 @@ router.post('/:id/bill', adminAuth, async (req, res) => {
 
         const io = req.app.get('io');
         if (io) {
-            io.emit('orderUpdate', order);
-            io.emit('tableUpdate');
+            const adminRoom = order.adminId.toString();
+            io.to(adminRoom).emit('orderUpdate', order);
+            io.to(adminRoom).emit('tableUpdate');
         }
 
         res.json({ message: 'Bill generated, table released', order });

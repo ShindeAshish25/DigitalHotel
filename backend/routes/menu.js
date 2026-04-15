@@ -71,9 +71,23 @@ router.put('/categories/:id', adminAuth, upload.single('image'), async (req, res
 });
 
 router.delete('/categories/:id', adminAuth, async (req, res) => {
-    const category = await Category.findOneAndDelete({ _id: req.params.id, adminId: req.user.id });
-    if (!category) return res.status(404).json({ message: 'Category not found' });
-    res.json({ msg: 'Category deleted' });
+    try {
+        const categoryId = req.params.id;
+        const adminId = req.user.id;
+
+        const category = await Category.findOneAndDelete({ _id: categoryId, adminId });
+        if (!category) {
+            return res.status(404).json({ message: 'Category not found' });
+        }
+
+        // Cascade delete: Remove all menu items belonging to this category and admin
+        await Menu.deleteMany({ category: categoryId, adminId });
+
+        res.json({ msg: 'Category and associated dishes deleted' });
+    } catch (err) {
+        console.error('Error deleting category:', err);
+        res.status(500).json({ message: 'Error deleting category' });
+    }
 });
 
 // Menu

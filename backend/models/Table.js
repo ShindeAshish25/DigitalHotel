@@ -8,4 +8,6 @@ const tableSchema = new mongoose.Schema({
     adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
 });
 
+tableSchema.index({ number: 1, adminId: 1 }, { unique: true });
+
 module.exports = mongoose.model('Table', tableSchema);

@@ -9,11 +9,12 @@ import {
     ChevronRight,
     Search
 } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import io from 'socket.io-client';
 import { useNavigate } from 'react-router-dom';
 
-const socket = io(import.meta.env.VITE_SOCKET_URL || window.location.origin, { transports: ['websocket', 'polling'] });
 const AdminDashboard = () => {
+    const { user } = useSelector(state => state.auth);
     const navigate = useNavigate();
     const [stats, setStats] = useState({
         liveOrders: 0,
@@ -27,6 +28,13 @@ const AdminDashboard = () => {
     const [activeOrders, setActiveOrders] = useState([]);
 
     useEffect(() => {
+        const socketURL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
+        const socket = io(socketURL, { transports: ['websocket', 'polling'] });
+
+        if (user?._id) {
+            socket.emit('join_admin', user._id);
+        }
+
         const fetchData = async () => {
             try {
                 const [ordersRes, tablesRes] = await Promise.all([
@@ -62,12 +70,14 @@ const AdminDashboard = () => {
         socket.on('orderUpdate', fetchData);
         socket.on('tableUpdate', fetchData);
         socket.on('newOrder', fetchData);
+
         return () => {
             socket.off('orderUpdate', fetchData);
             socket.off('tableUpdate', fetchData);
             socket.off('newOrder', fetchData);
+            socket.disconnect();
         };
-    }, []);
+    }, [user]);
 
     return (
         <main className="px-6 md:px-10 py-8 bg-surface">

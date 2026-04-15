@@ -17,6 +17,7 @@ const AdminOTPPage = () => {
     const { error: backendError, tempToken: reduxTempToken, loading } = useSelector((state) => state.auth);
 
     const mobile = location.state?.mobile || '';
+    const email = location.state?.email || '';
     // Priority: 1. Navigation State, 2. Redux State
     const tempToken = location.state?.tempToken || reduxTempToken;
 
@@ -107,7 +108,7 @@ const AdminOTPPage = () => {
                 <div className="text-center mb-10">
                     <h2 className="text-3xl font-extrabold tracking-tight text-on-surface mb-3">Verification Code</h2>
                     <p className="text-on-surface-variant leading-relaxed px-4 text-sm">
-                        Sent to <span className="font-bold text-on-surface">{mobile || "Administrator"}</span>
+                        Sent to <span className="font-bold text-on-surface">{email || mobile || "Administrator"}</span>
                     </p>
                 </div>
 

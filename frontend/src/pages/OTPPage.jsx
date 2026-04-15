@@ -111,9 +111,9 @@ const OTPPage = () => {
                 </div>
 
                 <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-                    <h2 className="headline-md" style={{ marginBottom: '0.75rem' }}>Verify Your Number</h2>
+                    <h2 className="headline-md" style={{ marginBottom: '0.75rem' }}>Verify Your Email</h2>
                     <p className="body-md" style={{ padding: '0 1rem', opacity: 0.7 }}>
-                        Enter the code sent to <span style={{ fontWeight: 700, color: 'var(--on-surface)' }}>+91 {mobile}</span>
+                        Enter the code sent to <span style={{ fontWeight: 700, color: 'var(--on-surface)' }}>{email || '+91 ' + mobile}</span>
                     </p>
                 </div>
 
